@@ -1,9 +1,15 @@
 import 'package:desafio_tecnico_2_escribo/core/network/network_info.dart';
 import 'package:desafio_tecnico_2_escribo/data/datasource/book/book_data_source_remote.dart';
+import 'package:desafio_tecnico_2_escribo/data/datasource/reading_history/reading_history_data_source_local.dart';
 import 'package:desafio_tecnico_2_escribo/data/repositories/book/book_repository_impl.dart';
+import 'package:desafio_tecnico_2_escribo/data/repositories/reading_history/reading_history_repository_impl.dart';
 import 'package:desafio_tecnico_2_escribo/domain/repositories/book/book_repository.dart';
+import 'package:desafio_tecnico_2_escribo/domain/repositories/reading_history/reading_history_repository.dart';
 import 'package:desafio_tecnico_2_escribo/domain/usecase/book/fetch_books.dart';
+import 'package:desafio_tecnico_2_escribo/domain/usecase/reading_history/fetch_history.dart';
+import 'package:desafio_tecnico_2_escribo/domain/usecase/reading_history/save_history.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/book/book_store.dart';
+import 'package:desafio_tecnico_2_escribo/presentation/mobx/reading_history/reading_history_store.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:internet_connection_checker/internet_connection_checker.dart';
@@ -25,6 +31,7 @@ Future<void> setupContainer() async {
 
   // features
   bookFeature();
+  readingHistoryFeature();
 }
 
 void bookFeature() {
@@ -37,4 +44,18 @@ void bookFeature() {
   it.registerLazySingleton(() => FetchBook(repository: it()));
 
   it.registerFactory(() => BookStore(fetchBook: it()));
+}
+
+void readingHistoryFeature() {
+  it.registerLazySingleton<ReadingHistoryDataSourceLocal>(
+      () => ReadingHistoryDataSourceLocalImpl(shared: it()));
+
+  it.registerLazySingleton<ReadingHistoryRepository>(
+      () => ReadingHistoryRepositoryImpl(dataSourceLocal: it()));
+
+  it.registerLazySingleton(() => FetchHistory(repository: it()));
+  it.registerLazySingleton(() => SaveHistory(repository: it()));
+
+  it.registerFactory(
+      () => ReadingHistoryStore(fetchHistory: it(), saveHistory: it()));
 }

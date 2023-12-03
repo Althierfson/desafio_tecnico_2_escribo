@@ -3,6 +3,7 @@ import 'package:desafio_tecnico_2_escribo/core/download/download_epub.dart';
 import 'package:desafio_tecnico_2_escribo/custom_colos.dart';
 import 'package:desafio_tecnico_2_escribo/domain/entities/book.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/book/book_store.dart';
+import 'package:desafio_tecnico_2_escribo/presentation/mobx/reading_history/reading_history_store.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/pages/read_book.dart';
 
 import 'package:desafio_tecnico_2_escribo/presentation/widgets/book_tile.dart';
@@ -17,12 +18,15 @@ class BookListPage extends StatefulWidget {
 }
 
 class _BookListPageState extends State<BookListPage> {
-  late BookStore _store;
+  late BookStore _bookStore;
+  late ReadingHistoryStore _readingHistoryStore;
 
   @override
   void initState() {
-    _store = it<BookStore>();
-    _store.fetchForBookList();
+    _bookStore = it<BookStore>();
+    _readingHistoryStore = it<ReadingHistoryStore>();
+    _bookStore.fetchForBookList();
+    _readingHistoryStore.fetchForHistoryList();
     super.initState();
   }
 
@@ -63,17 +67,56 @@ class _BookListPageState extends State<BookListPage> {
                 const SizedBox(
                   height: 20.0,
                 ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * .35,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 3,
-                    itemBuilder: (context, index) => Text("data"),
-                    separatorBuilder: (context, index) => const SizedBox(
-                      width: 15.0,
-                    ),
-                  ),
-                ),
+                Observer(builder: (context) {
+                  if (_readingHistoryStore.historyList.isEmpty) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          "assets/imagens/books.png",
+                          height: 120,
+                        ),
+                        const SizedBox(
+                          width: 15.0,
+                        ),
+                        SizedBox(
+                          width: MediaQuery.of(context).size.height * .3,
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("Você não leu nem um livro recentemente."),
+                              Text(
+                                "Visite o nosso arcevo e começe sua leitura.",
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return SizedBox(
+                      height: MediaQuery.of(context).size.height * .35,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _readingHistoryStore.historyList.length,
+                        itemBuilder: (context, index) => BookTile(
+                            book: _readingHistoryStore.historyList[index],
+                            isfavorite: true,
+                            onTap: () {
+                              _openEpub(
+                                  _readingHistoryStore.historyList[index]);
+                            },
+                            onLabelTap: () {}),
+                        separatorBuilder: (context, index) => const SizedBox(
+                          width: 15.0,
+                        ),
+                      ),
+                    );
+                  }
+                }),
                 const Text(
                   "Explore o nosso arcevo",
                   style: TextStyle(
@@ -99,7 +142,7 @@ class _BookListPageState extends State<BookListPage> {
                   height: 10.0,
                 ),
                 Observer(builder: (context) {
-                  if (_store.isLoading) {
+                  if (_bookStore.isLoading) {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
@@ -120,26 +163,26 @@ class _BookListPageState extends State<BookListPage> {
 
   Widget _buildGrid() {
     List<Widget> listWidget = [];
-    for (int i = 0; i < _store.bookList.length; i = i + 2) {
+    for (int i = 0; i < _bookStore.bookList.length; i = i + 2) {
       listWidget.add(Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           BookTile(
-              book: _store.bookList[i],
+              book: _bookStore.bookList[i],
               isfavorite: true,
               onTap: () {
-                _openEpub(_store.bookList[i]);
+                _openEpub(_bookStore.bookList[i]);
               },
               onLabelTap: () {}),
           const SizedBox(
             width: 15.0,
           ),
-          i + 1 < _store.bookList.length
+          i + 1 < _bookStore.bookList.length
               ? BookTile(
-                  book: _store.bookList[i + 1],
+                  book: _bookStore.bookList[i + 1],
                   isfavorite: true,
                   onTap: () {
-                    _openEpub(_store.bookList[i + 1]);
+                    _openEpub(_bookStore.bookList[i + 1]);
                   },
                   onLabelTap: () {})
               : Container()
@@ -222,6 +265,7 @@ class _BookListPageState extends State<BookListPage> {
                         ),
                         ElevatedButton(
                           onPressed: () {
+                            _readingHistoryStore.saveHistoryList(book);
                             Navigator.pop(context);
                             openEpub(book.downloadUrl);
                           },

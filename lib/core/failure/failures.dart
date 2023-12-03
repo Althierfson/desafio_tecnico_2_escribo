@@ -15,8 +15,12 @@ class NoInternetFailure extends Failure {
   String get message => "Sem Internet.";
 }
 
-class AccessServerFailure extends Failure{
+class AccessServerFailure extends Failure {
   @override
   String get message => "Não foi possivel acessar o Servidor.";
+}
 
+class LocalDataAccessFailure extends Failure {
+  @override
+  String get message => "Não foi possivel acessar os dados locais.";
 }
