@@ -1,14 +1,20 @@
 import 'package:desafio_tecnico_2_escribo/core/network/network_info.dart';
 import 'package:desafio_tecnico_2_escribo/data/datasource/book/book_data_source_remote.dart';
+import 'package:desafio_tecnico_2_escribo/data/datasource/favorites/favorites_data_source_local.dart';
 import 'package:desafio_tecnico_2_escribo/data/datasource/reading_history/reading_history_data_source_local.dart';
 import 'package:desafio_tecnico_2_escribo/data/repositories/book/book_repository_impl.dart';
+import 'package:desafio_tecnico_2_escribo/data/repositories/favorites/favorites_repository_impl.dart';
 import 'package:desafio_tecnico_2_escribo/data/repositories/reading_history/reading_history_repository_impl.dart';
 import 'package:desafio_tecnico_2_escribo/domain/repositories/book/book_repository.dart';
+import 'package:desafio_tecnico_2_escribo/domain/repositories/favorites/favorites_repository.dart';
 import 'package:desafio_tecnico_2_escribo/domain/repositories/reading_history/reading_history_repository.dart';
 import 'package:desafio_tecnico_2_escribo/domain/usecase/book/fetch_books.dart';
+import 'package:desafio_tecnico_2_escribo/domain/usecase/favorites/fetch_favorites_books.dart';
+import 'package:desafio_tecnico_2_escribo/domain/usecase/favorites/update_favorites_books.dart';
 import 'package:desafio_tecnico_2_escribo/domain/usecase/reading_history/fetch_history.dart';
 import 'package:desafio_tecnico_2_escribo/domain/usecase/reading_history/save_history.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/book/book_store.dart';
+import 'package:desafio_tecnico_2_escribo/presentation/mobx/favorites/favorites_store.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/reading_history/reading_history_store.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
@@ -32,6 +38,7 @@ Future<void> setupContainer() async {
   // features
   bookFeature();
   readingHistoryFeature();
+  favoritesFeature();
 }
 
 void bookFeature() {
@@ -58,4 +65,18 @@ void readingHistoryFeature() {
 
   it.registerFactory(
       () => ReadingHistoryStore(fetchHistory: it(), saveHistory: it()));
+}
+
+void favoritesFeature() {
+  it.registerLazySingleton<FavoritesDataSourceLocal>(
+      () => FavoritesDataSourceLocalImpl(shared: it()));
+
+  it.registerLazySingleton<FavoritesRepository>(
+      () => FavoritesRepositoryImpl(dataSourceLocal: it()));
+
+  it.registerLazySingleton(() => FetchFavoritesBooks(repository: it()));
+  it.registerLazySingleton(() => UpdateFavoritesBooks(repository: it()));
+
+  it.registerFactory(() =>
+      FavoritesStore(fetchFavoritesBooks: it(), updateFavoritesBooks: it()));
 }

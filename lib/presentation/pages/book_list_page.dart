@@ -3,6 +3,7 @@ import 'package:desafio_tecnico_2_escribo/core/download/download_epub.dart';
 import 'package:desafio_tecnico_2_escribo/custom_colos.dart';
 import 'package:desafio_tecnico_2_escribo/domain/entities/book.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/book/book_store.dart';
+import 'package:desafio_tecnico_2_escribo/presentation/mobx/favorites/favorites_store.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/mobx/reading_history/reading_history_store.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/pages/read_book.dart';
 
@@ -20,13 +21,18 @@ class BookListPage extends StatefulWidget {
 class _BookListPageState extends State<BookListPage> {
   late BookStore _bookStore;
   late ReadingHistoryStore _readingHistoryStore;
+  late FavoritesStore _favoritesStore;
+
+  bool _showFavorites = false;
 
   @override
   void initState() {
     _bookStore = it<BookStore>();
     _readingHistoryStore = it<ReadingHistoryStore>();
+    _favoritesStore = it<FavoritesStore>();
     _bookStore.fetchForBookList();
     _readingHistoryStore.fetchForHistoryList();
+    _favoritesStore.fetchForBookList();
     super.initState();
   }
 
@@ -104,12 +110,16 @@ class _BookListPageState extends State<BookListPage> {
                         itemCount: _readingHistoryStore.historyList.length,
                         itemBuilder: (context, index) => BookTile(
                             book: _readingHistoryStore.historyList[index],
-                            isfavorite: true,
+                            isfavorite: _isFavorite(
+                                _readingHistoryStore.historyList[index]),
                             onTap: () {
                               _openEpub(
                                   _readingHistoryStore.historyList[index]);
                             },
-                            onLabelTap: () {}),
+                            onLabelTap: () {
+                              _updataFavorites(
+                                  _readingHistoryStore.historyList[index]);
+                            }),
                         separatorBuilder: (context, index) => const SizedBox(
                           width: 15.0,
                         ),
@@ -118,7 +128,7 @@ class _BookListPageState extends State<BookListPage> {
                   }
                 }),
                 const Text(
-                  "Explore o nosso arcevo",
+                  "Explore o nosso acervo",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -130,24 +140,65 @@ class _BookListPageState extends State<BookListPage> {
                 Row(
                   children: [
                     ElevatedButton(
-                        onPressed: () {}, child: const Text("Estante")),
+                      onPressed: () {
+                        setState(() {
+                          _showFavorites = false;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: _showFavorites
+                              ? Colors.white
+                              : CustomColors.maximumBluePurple),
+                      child: Text(
+                        "Estante",
+                        style: TextStyle(
+                            color: _showFavorites
+                                ? CustomColors.maximumBluePurple
+                                : Colors.white),
+                      ),
+                    ),
                     const SizedBox(
                       width: 10.0,
                     ),
                     ElevatedButton(
-                        onPressed: () {}, child: const Text("Favoritos"))
+                        onPressed: () {
+                          setState(() {
+                            _showFavorites = true;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: _showFavorites
+                                ? CustomColors.maximumBluePurple
+                                : Colors.white),
+                        child: Text(
+                          "Favoritos",
+                          style: TextStyle(
+                              color: _showFavorites
+                                  ? Colors.white
+                                  : CustomColors.maximumBluePurple),
+                        ))
                   ],
                 ),
                 const SizedBox(
                   height: 10.0,
                 ),
                 Observer(builder: (context) {
-                  if (_bookStore.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                  if (_showFavorites) {
+                    if (_favoritesStore.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    } else {
+                      return _buildGrid(_favoritesStore.favoritesList);
+                    }
                   } else {
-                    return _buildGrid();
+                    if (_bookStore.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    } else {
+                      return _buildGrid(_bookStore.bookList);
+                    }
                   }
                 }),
                 const SizedBox(
@@ -161,36 +212,42 @@ class _BookListPageState extends State<BookListPage> {
     );
   }
 
-  Widget _buildGrid() {
+  Widget _buildGrid(List<Book> list) {
     List<Widget> listWidget = [];
-    for (int i = 0; i < _bookStore.bookList.length; i = i + 2) {
+    for (int i = 0; i < list.length; i = i + 2) {
       listWidget.add(Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           BookTile(
-              book: _bookStore.bookList[i],
-              isfavorite: true,
+              book: list[i],
+              isfavorite: _isFavorite(list[i]),
               onTap: () {
-                _openEpub(_bookStore.bookList[i]);
+                _openEpub(list[i]);
               },
-              onLabelTap: () {}),
+              onLabelTap: () {
+                _updataFavorites(list[i]);
+              }),
           const SizedBox(
             width: 15.0,
           ),
-          i + 1 < _bookStore.bookList.length
+          i + 1 < list.length
               ? BookTile(
-                  book: _bookStore.bookList[i + 1],
-                  isfavorite: true,
+                  book: list[i + 1],
+                  isfavorite: _isFavorite(list[i + 1]),
                   onTap: () {
-                    _openEpub(_bookStore.bookList[i + 1]);
+                    _openEpub(list[i + 1]);
                   },
-                  onLabelTap: () {})
+                  onLabelTap: () {
+                    _updataFavorites(list[i + 1]);
+                  })
               : Container()
         ],
       ));
     }
     return Column(children: listWidget);
   }
+
+  bool _isFavorite(Book book) => _favoritesStore.favoritesList.contains(book);
 
   _openEpub(Book book) async {
     final down = DownloadEpub.instance;
@@ -305,5 +362,14 @@ class _BookListPageState extends State<BookListPage> {
                 ),
               ),
             ));
+  }
+
+  void _updataFavorites(Book book) {
+    if (_isFavorite(book)) {
+      _favoritesStore.removeFavorite(book);
+    } else {
+      _favoritesStore.addNewFavorite(book);
+    }
+    setState(() {});
   }
 }
