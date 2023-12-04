@@ -10,6 +10,7 @@ import 'package:desafio_tecnico_2_escribo/presentation/pages/read_book.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/widgets/book_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:mobx/mobx.dart';
 
 class BookListPage extends StatefulWidget {
   const BookListPage({super.key});
@@ -23,6 +24,8 @@ class _BookListPageState extends State<BookListPage> {
   late ReadingHistoryStore _readingHistoryStore;
   late FavoritesStore _favoritesStore;
 
+  late List<ReactionDisposer> _disposers;
+
   bool _showFavorites = false;
 
   @override
@@ -33,7 +36,25 @@ class _BookListPageState extends State<BookListPage> {
     _bookStore.fetchForBookList();
     _readingHistoryStore.fetchForHistoryList();
     _favoritesStore.fetchForBookList();
+    _createReactionList();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _disposers.map((e) => e());
+    super.dispose();
+  }
+
+  _createReactionList() {
+    _disposers = [
+      reaction((_) => _bookStore.error, (String? msg) {
+        if (msg != null) {
+          _showSnackBar(msg);
+        }
+        _bookStore.error = null;
+      }),
+    ];
   }
 
   @override
@@ -87,7 +108,7 @@ class _BookListPageState extends State<BookListPage> {
                           width: 15.0,
                         ),
                         SizedBox(
-                          width: MediaQuery.of(context).size.height * .3,
+                          width: MediaQuery.of(context).size.width * .5,
                           child: const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -213,38 +234,54 @@ class _BookListPageState extends State<BookListPage> {
   }
 
   Widget _buildGrid(List<Book> list) {
-    List<Widget> listWidget = [];
-    for (int i = 0; i < list.length; i = i + 2) {
-      listWidget.add(Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          BookTile(
-              book: list[i],
-              isfavorite: _isFavorite(list[i]),
-              onTap: () {
-                _openEpub(list[i]);
-              },
-              onLabelTap: () {
-                _updataFavorites(list[i]);
-              }),
-          const SizedBox(
-            width: 15.0,
-          ),
-          i + 1 < list.length
-              ? BookTile(
-                  book: list[i + 1],
-                  isfavorite: _isFavorite(list[i + 1]),
-                  onTap: () {
-                    _openEpub(list[i + 1]);
-                  },
-                  onLabelTap: () {
-                    _updataFavorites(list[i + 1]);
-                  })
-              : Container()
-        ],
-      ));
+    if (list.isNotEmpty) {
+      List<Widget> listWidget = [];
+      for (int i = 0; i < list.length; i = i + 2) {
+        listWidget.add(Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BookTile(
+                book: list[i],
+                isfavorite: _isFavorite(list[i]),
+                onTap: () {
+                  _openEpub(list[i]);
+                },
+                onLabelTap: () {
+                  _updataFavorites(list[i]);
+                }),
+            const SizedBox(
+              width: 15.0,
+            ),
+            i + 1 < list.length
+                ? BookTile(
+                    book: list[i + 1],
+                    isfavorite: _isFavorite(list[i + 1]),
+                    onTap: () {
+                      _openEpub(list[i + 1]);
+                    },
+                    onLabelTap: () {
+                      _updataFavorites(list[i + 1]);
+                    })
+                : Container()
+          ],
+        ));
+      }
+      return Column(children: listWidget);
+    } else {
+      return Center(
+        child: Column(
+          children: [
+            Image.asset(
+              "assets/imagens/icon_book_list.png",
+              height: 150,
+            ),
+            Text(_showFavorites
+                ? "Você não favoritou nem um livro ainda."
+                : "Nosso acervo não está disponível no momento.")
+          ],
+        ),
+      );
     }
-    return Column(children: listWidget);
   }
 
   bool _isFavorite(Book book) => _favoritesStore.favoritesList.contains(book);
@@ -371,5 +408,16 @@ class _BookListPageState extends State<BookListPage> {
       _favoritesStore.addNewFavorite(book);
     }
     setState(() {});
+  }
+
+  void _showSnackBar(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(
+        msg,
+        style:
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: CustomColors.maximumBluePurple,
+    ));
   }
 }
