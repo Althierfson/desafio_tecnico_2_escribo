@@ -30,12 +30,7 @@ class _BookListPageState extends State<BookListPage> {
 
   @override
   void initState() {
-    _bookStore = it<BookStore>();
-    _readingHistoryStore = it<ReadingHistoryStore>();
-    _favoritesStore = it<FavoritesStore>();
-    _bookStore.fetchForBookList();
-    _readingHistoryStore.fetchForHistoryList();
-    _favoritesStore.fetchForBookList();
+    _setStores();
     _createReactionList();
     super.initState();
   }
@@ -44,6 +39,15 @@ class _BookListPageState extends State<BookListPage> {
   void dispose() {
     _disposers.map((e) => e());
     super.dispose();
+  }
+
+  _setStores() {
+    _bookStore = it<BookStore>();
+    _readingHistoryStore = it<ReadingHistoryStore>();
+    _favoritesStore = it<FavoritesStore>();
+    _bookStore.fetchForBookList();
+    _readingHistoryStore.fetchForHistoryList();
+    _favoritesStore.fetchForBookList();
   }
 
   _createReactionList() {
@@ -124,26 +128,29 @@ class _BookListPageState extends State<BookListPage> {
                       ],
                     );
                   } else {
-                    return SizedBox(
-                      height: MediaQuery.of(context).size.height * .35,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _readingHistoryStore.historyList.length,
-                        itemBuilder: (context, index) => BookTile(
-                            book: _readingHistoryStore.historyList[index],
-                            isfavorite: _isFavorite(
-                                _readingHistoryStore.historyList[index]),
-                            onTap: () {
-                              _openEpub(
-                                  _readingHistoryStore.historyList[index]);
-                            },
-                            onLabelTap: () {
-                              _updataFavorites(
-                                  _readingHistoryStore.historyList[index]);
-                            }),
-                        separatorBuilder: (context, index) => const SizedBox(
-                          width: 15.0,
-                        ),
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(
+                            _readingHistoryStore.historyList.length,
+                            (index) => Padding(
+                                  padding: const EdgeInsets.only(right: 15.0),
+                                  child: BookTile(
+                                      book: _readingHistoryStore
+                                          .historyList[index],
+                                      isfavorite: _isFavorite(
+                                          _readingHistoryStore
+                                              .historyList[index]),
+                                      onTap: () {
+                                        _openEpub(_readingHistoryStore
+                                            .historyList[index]);
+                                      },
+                                      onLabelTap: () {
+                                        _updataFavorites(_readingHistoryStore
+                                            .historyList[index]);
+                                      }),
+                                )),
                       ),
                     );
                   }
