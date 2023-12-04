@@ -378,7 +378,18 @@ class _BookListPageState extends State<BookListPage> {
                           ),
                         )
                       ],
-                    )
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          DownloadEpub.instance
+                              .deleteFileByURL(book.downloadUrl);
+                          Navigator.pop(context);
+                          _showSnackBar("Epub Deletado.");
+                        },
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.black,
+                        ))
                   ],
                 ),
               ],

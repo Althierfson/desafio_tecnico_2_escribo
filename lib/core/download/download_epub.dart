@@ -107,4 +107,10 @@ class DownloadEpub {
       return null;
     }
   }
+
+  Future<void> deleteFileByURL(String url) async {
+    File file = File(await filePathByUrl(url));
+
+    await file.delete();
+  }
 }
