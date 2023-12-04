@@ -1,10 +1,13 @@
 import 'package:desafio_tecnico_2_escribo/container_injection.dart';
 import 'package:desafio_tecnico_2_escribo/presentation/pages/book_list_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupContainer();
+
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(const MyApp());
 }
